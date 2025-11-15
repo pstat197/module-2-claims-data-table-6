@@ -1,5 +1,8 @@
-# Required packages
+# ========================================
+# Logistic PCA Regression with Headers
+# ========================================
 
+# Required packages
 library(tidyverse)
 library(tidytext)
 library(textstem)
@@ -8,17 +11,17 @@ library(qdapRegex)
 library(stopwords)
 library(tokenizers)
 library(tm)
+library(glmnet)
+library(caret)
 
 set.seed(1234)
 
-
 # Source original preprocessing functions
-
 source('scripts/preprocessing.R')
 
-
+# ----------------------------------------
 # 1. Define new parse function including headers
-
+# ----------------------------------------
 parse_fn_headers <- function(.html){
   read_html(.html) %>%
     html_elements('p, h1, h2, h3, h4, h5, h6') %>%
@@ -38,77 +41,111 @@ parse_fn_headers <- function(.html){
     str_replace_all("\\s+", " ")
 }
 
-
+# ----------------------------------------
 # 2. Load raw data
-
+# ----------------------------------------
 load('data/claims-raw.RData')
 
+# ----------------------------------------
+# 3. Train/test split
+# ----------------------------------------
+set.seed(1234)
+partitions <- initial_split(claims_raw, prop = 0.8)
+train_raw <- training(partitions)
+test_raw  <- testing(partitions)
 
-# 3. Preprocess datasets
-
-# Paragraph-only (original)
-claims_clean_paragraph <- claims_raw %>%
-  parse_data()  # uses original parse_fn from preprocessing.R
+# ----------------------------------------
+# 4. Preprocess datasets
+# ----------------------------------------
+# Paragraph-only
+claims_train_paragraph <- train_raw %>%
+  parse_data()  # uses original parse_fn
+claims_test_paragraph <- test_raw %>%
+  parse_data()
 
 # Paragraph + headers
-claims_clean_headers <- claims_raw %>%
+claims_train_headers <- train_raw %>%
   parse_data() %>%
   rowwise() %>%
   mutate(text_clean = parse_fn_headers(text_tmp)) %>%
   unnest(text_clean)
 
+claims_test_headers <- test_raw %>%
+  parse_data() %>%
+  rowwise() %>%
+  mutate(text_clean = parse_fn_headers(text_tmp)) %>%
+  unnest(text_clean)
 
-# 4. Define LPCR function
-
-lpcr_model <- function(cleaned_df, n_pcs = 10){
+# ----------------------------------------
+# 5. Define LPCR function using glmnet
+# ----------------------------------------
+lpcr_glmnet <- function(train_df, test_df, n_pcs = 10){
   
-  # Tokenize, remove stopwords, compute TF-IDF
-  tfidf_df <- cleaned_df %>%
+  # ---- Train TF-IDF ----
+  tfidf_train <- train_df %>%
     unnest_tokens(word, text_clean) %>%
     anti_join(stop_words) %>%
     count(.id, bclass, word) %>%
     bind_tf_idf(word, .id, n)
   
-  # Convert to wide matrix
-  X_df <- tfidf_df %>%
+  X_train <- tfidf_train %>%
     select(.id, word, tf_idf) %>%
-    pivot_wider(names_from = word, values_from = tf_idf, values_fill = 0)
+    pivot_wider(names_from = word, values_from = tf_idf, values_fill = 0) %>%
+    left_join(select(train_df, .id, bclass), by = ".id")
   
-  # Add labels
-  lpcr_df <- X_df %>%
-    left_join(select(cleaned_df, .id, bclass), by = ".id")
+  y_train <- as.numeric(X_train$bclass) - 1
+  X_train_mat <- as.matrix(X_train %>% select(-.id, -bclass))
   
-  X <- lpcr_df %>% select(-.id, -bclass)
-  y <- lpcr_df$bclass
+  # ---- PCA ----
+  pca <- prcomp(X_train_mat, center = TRUE, scale. = TRUE)
+  pcs_train <- pca$x[, 1:n_pcs]
   
-  # PCA
-  pca <- prcomp(X, center = TRUE, scale. = TRUE)
+  # ---- Fit logistic regression with glmnet ----
+  fit <- cv.glmnet(pcs_train, y_train, family = "binomial", alpha = 0)
   
-  # Select first n PCs
-  pcs <- pca$x[, 1:n_pcs]
+  # ---- Prepare test set ----
+  tfidf_test <- test_df %>%
+    unnest_tokens(word, text_clean) %>%
+    anti_join(stop_words) %>%
+    count(.id, bclass, word) %>%
+    bind_tf_idf(word, .id, n)
   
-  # Fit logistic regression
-  logit_mod <- glm(y ~ ., data = data.frame(y, pcs), family = binomial)
+  X_test <- tfidf_test %>%
+    select(.id, word, tf_idf) %>%
+    pivot_wider(names_from = word, values_from = tf_idf, values_fill = 0) %>%
+    left_join(select(test_df, .id, bclass), by = ".id")
   
-  # Predictions
-  probs <- predict(logit_mod, type = "response")
-  pred <- ifelse(probs > 0.5, 1, 0)
+  # Align columns to train
+  X_test_mat <- as.matrix(X_test %>% select(-.id, -bclass))
+  # Fill missing columns with 0
+  missing_cols <- setdiff(colnames(X_train_mat), colnames(X_test_mat))
+  if(length(missing_cols) > 0){
+    X_test_mat <- cbind(X_test_mat, matrix(0, nrow = nrow(X_test_mat), ncol = length(missing_cols)))
+    colnames(X_test_mat)[(ncol(X_test_mat)-length(missing_cols)+1):ncol(X_test_mat)] <- missing_cols
+  }
+  # Ensure same column order
+  X_test_mat <- X_test_mat[, colnames(X_train_mat)]
   
-  # Accuracy
-  accuracy <- mean(pred == (as.numeric(y) - 1))
+  # ---- PCA transform test set ----
+  pcs_test <- scale(X_test_mat, center = pca$center, scale = pca$scale) %*% pca$rotation[, 1:n_pcs]
+  
+  # ---- Predict ----
+  preds_prob <- predict(fit, newx = pcs_test, s = "lambda.min", type = "response")
+  preds_class <- ifelse(preds_prob > 0.5, 1, 0)
+  
+  # ---- Accuracy ----
+  y_test <- as.numeric(X_test$bclass) - 1
+  accuracy <- mean(preds_class == y_test)
   
   return(accuracy)
 }
 
+# ----------------------------------------
+# 6. Run models and compute test accuracy
+# ----------------------------------------
+accuracy_paragraph <- lpcr_glmnet(claims_train_paragraph, claims_test_paragraph, n_pcs = 10)
+accuracy_headers   <- lpcr_glmnet(claims_train_headers,   claims_test_headers, n_pcs = 10)
 
-# 5. Compute accuracy for both datasets
-
-accuracy_paragraph <- lpcr_model(claims_clean_paragraph, n_pcs = 10)
-accuracy_headers   <- lpcr_model(claims_clean_headers, n_pcs = 10)
-
-cat("LPCR accuracy (paragraph-only):", round(accuracy_paragraph, 3), "\n")
-cat("LPCR accuracy (paragraph + headers):", round(accuracy_headers, 3), "\n")
-
-
-
+cat("LPCR test accuracy (paragraph-only):", round(accuracy_paragraph, 3), "\n")
+cat("LPCR test accuracy (paragraph + headers):", round(accuracy_headers, 3), "\n")
 
