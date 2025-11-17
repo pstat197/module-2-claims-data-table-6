@@ -1,37 +1,31 @@
 ---
 title: "Predictive modeling of claims status"
-author: 'YOUR NAMES HERE'
+author: 'Janice Jiang'
 date: today
 ---
 
 ### Abstract
 
-Provide a 3-5 sentence summary of your work on the primary task. Indicate what input data was used, what method was used for binary class predictions, what method was used for multiclass predictions, and what estimated accuracies were achieved.
-
-> *Header and paragraph content was scraped from the raw webpages and processed into term frequencies of word tokens. For binary classification, a two-layer neural network yielded an estimated 81.4% accuracy; for multiclass classification, a support vector machine gave 78% accuracy.*
+We constructed two sequence-aware neural-network models to identify insurance-claim content in web pages scraped from 2 165 labelled URLs. After converting header and paragraph text to integer token sequences (20 000-word vocabulary, 750-token limit), a shared Bidirectional-LSTM backbone was used for both the binary and five-class tasks. On a 20 % hold-out test dataset the binary classifier reached 79.9 % accuracy (sensitivity = 0.75, specificity = 0.84), while the multiclass model achieved 76.9 % accuracy with macro-averaged sensitivity of 0.78 and specificity of 0.91. The fitted models and their text-vectorisation layer were exported in Keras format and subsequently employed to score the 929-page test set.
 
 ### Preprocessing
 
-In one paragraph lay out your preprocessing pipeline. No need to provide exact step-by-step detail; just give an overview of the main components:
-
--   what text content was extracted from HTML
-
--   how text was cleaned
-
--   how cleaned text was represented quantitatively
+Raw HTML was parsed with **xml2**, retaining every paragraph tag and the six levels of headers to preserve contextual cues. The combined text was converted to lower case, and all URLs, email addresses, digits, punctuation, and extra whitespace were removed with **qdapRegex** and string-replacement routines. Instead of producing a static document–term matrix, we deferred vectorisation to Keras: a `layer_text_vectorization` object tokenised on whitespace, built a frequency-ranked vocabulary of the 20,000 most common words, and encoded each document as a fixed-length sequence of integers, padding or truncating to 750 tokens.
 
 ### Methods
 
-Describe your final predictive models. Include one paragraph with details on the binary classification approach, and one on the multiclass approach. Include for each:
+We first split the claim data into training (80%) and testing (20%) and we use only training set for constructing the model, while testing set is used for model predictive performance check. For the binary task we employed a Bidirectional LSTM containing 64 hidden units. Input sequences passed through a 128-dimensional embedding layer, the bi-directional recurrent layer, a fully connected layer of 64 ReLU units with 30 % dropout for regularisation, and finally a single sigmoid neuron. The network was trained with the Adam optimiser (learning rate $1 \times 10^{-3}$) to minimise binary cross-entropy. Early stopping monitored validation loss with a patience of ten epochs, restoring the best weights.
 
--   what ML/statistical method was used
-
--   model specification and hyperparameter selection
-
--   training method
+The multiclass model reused the same embedding and recurrent backbone but employed a five-unit soft-max output and categorical cross-entropy loss. All other hyper-parameters were kept fixed to maintain comparability. Training ran for ten epochs wihout early stop. Hyper-parameter values—including vocabulary size, sequence length, embedding width, LSTM width, dropout rate, and optimiser—were tuned manually on a small grid and locked once stable performance was observed on the validation split.
 
 ### Results
 
-Indicate the predictive accuracy of the binary classifications and the multiclass classifications. Provide a table for each, and report sensitivity, specificity, and accuracy.[^1]
+The tables below report performance on the 20 % test set that was not seen during training. Sensitivity and specificity for the binary task refer to the claim-positive class; for the multiclass task they are macro-averages across the five categories.
 
-[^1]: Read [this article](https://yardstick.tidymodels.org/articles/multiclass.html) on multiclass averaging.
+| Model       | Accuracy | Sensitivity | Specificity |
+|-------------|---------:|------------:|------------:|
+| Binary LSTM |    0.799 |       0.750 |       0.841 |
+
+| Model           | Accuracy | Sensitivity (macro) | Specificity (macro) |
+|-----------------|---------:|--------------------:|--------------------:|
+| Multiclass LSTM |    0.769 |               0.784 |               0.913 |
