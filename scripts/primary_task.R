@@ -133,9 +133,9 @@ cat("\nMulticlass model – best accuracy:",
 ## 5. Save model ------------------------
 ############################################################
 save_model(model_rnn,
-           "/Users/jiangyibing/Desktop/PSTAT197A/module2/results/task2_binary_rnn_model.keras")
+           "/Users/jiangyibing/Desktop/PSTAT197A/module2/results/primary_task_binary_rnn_model.keras")
 save_model(model_mc,
-           "/Users/jiangyibing/Desktop/PSTAT197A/module2/results/task2_multiclass_rnn_model.keras")
+           "/Users/jiangyibing/Desktop/PSTAT197A/module2/results/primary_task_multiclass_rnn_model.keras")
 
 
 ############################################################
