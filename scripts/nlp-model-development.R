@@ -12,7 +12,7 @@ claims_clean <- claims_raw %>%
   parse_data()
 
 # export
-save(claims_clean, file = 'data/claims-clean-example.RData')
+save(claims_clean, file = "data/claims-clean-headers.RData")
 
 ## MODEL TRAINING (NN)
 ######################
