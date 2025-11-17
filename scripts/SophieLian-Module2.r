@@ -113,4 +113,4 @@ acc_headers   <- lpcr(tfidf_headers,   n_comp = 50)
 acc_paragraph
 # output: accuracy 0.5443038
 acc_headers
-# ou5tput: accuracy 0.5309524
+# output: accuracy 0.5309524
