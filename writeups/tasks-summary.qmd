@@ -1,6 +1,6 @@
 ---
 title: "Summary of exploratory tasks"
-author: 'Sophie Lian, Sanil Katula'
+author: 'Sophie Lian'
 date: today
 ---
 
@@ -16,12 +16,8 @@ Do bigrams capture additional information relevant to the classification of inte
 
 ### Neural net
 
-Summarize the neural network model you trained by desribing:
+For preliminary task 3, we trained a feed-forward neural network on the TF-IDF feature matrix generated from the claim text. After removing constant predictors, the final input dimension included several thousand sparse features. The model architecture consisted of three fully connected hidden layers with 64, 32, and 16 units, respectively, each using ReLU activation to capture nonlinear structure in the high-dimensional text data. To reduce overfitting, an important challenge with TF-IDF inputs, we incorporated dropout (0.15) after the first two layers, which randomly deactivates a portion of neurons during training to improve generalization. The final output layer used a single sigmoid unit to produce a probability for the binary classification task.
 
--   architecture
+The network was trained using the Adam optimizer, which adapts learning rates dynamically during training and is well-suited for large, complex deep learning models. We used binary cross-entropy as the loss function, consistent with the binary nature of the prediction target. Training was performed for 25 epochs with a batch size of 32 and included a 20% validation split to monitor performance during training. 
 
--   optimization and loss
-
--   training epochs
-
--   predictive accuracy
+On the test set, the neural network achieved a predictive accuracy of approximately 0.78, which represents a substantial improvement over the baseline logistic principle component regression model from preliminary task 1 that achieved an accuracy of approximately 0.547. This suggests that the neural network was better able to capture the complex, non-linear patterns present in the TF-IDF values of the claims data. Overall, this improvement highlights the value of deeper architectures and regularization when modeling high dimensional text features, leading to stronger predictive performance and more reliable classification claim outcomes. 
