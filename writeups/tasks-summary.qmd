@@ -1,6 +1,6 @@
 ---
 title: "Summary of exploratory tasks"
-author: 'Sophie Lian'
+author: 'Sophie Lian, Sanil Katula'
 date: today
 ---
 
