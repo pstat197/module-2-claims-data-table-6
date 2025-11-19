@@ -14,6 +14,8 @@ The results indicate that including header text did not improve predictive accur
 
 Do bigrams capture additional information relevant to the classification of interest? Answer the question, **briefly** describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer.
 
+Bigrams capture additional information relevant to the classification of interest. To understand if additional information was captured, a unigram model was made as a base case and compared with a stacked bigram model. The models performances were evaluated through test accuracy and AUC. The stacked bigram model has a test accuracy of 0.6472081 and an AUC of 0.6950724 , these are higher than the respective unigram performances of 0.6171285 and 0.6696772. The overall better performance of the stacked bigram model shows that bigrams capture additional information about the claims status of a page.
+
 ### Neural net
 
 For preliminary task 3, we trained a feed-forward neural network on the TF-IDF feature matrix generated from the claim text. After removing constant predictors, the final input dimension included several thousand sparse features. The model architecture consisted of three fully connected hidden layers with 64, 32, and 16 units, respectively, each using ReLU activation to capture nonlinear structure in the high-dimensional text data. To reduce overfitting, an important challenge with TF-IDF inputs, we incorporated dropout (0.15) after the first two layers, which randomly deactivates a portion of neurons during training to improve generalization. The final output layer used a single sigmoid unit to produce a probability for the binary classification task.
