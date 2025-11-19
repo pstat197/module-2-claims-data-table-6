@@ -12,6 +12,8 @@ Does including header content improve predictions? Answer the question and provi
 
 Do bigrams capture additional information relevant to the classification of interest? Answer the question, **briefly** describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer.
 
+Bigrams capture additional information relevant to the classification of interest. To understand if additional information was captured, a unigram model was made as a base case and compared with a stacked bigram model. The models performances were evaluated through test accuracy and AUC. The stacked bigram model has a test accuracy of 0.6472081 and an AUC of 0.6950724 , these are higher than the respective unigram performances of 0.6171285 and 0.6696772. The overall better performance of the stacked bigram model shows that bigrams capture additional information about the claims status of a page.
+
 ### Neural net
 
 Summarize the neural network model you trained by desribing:
