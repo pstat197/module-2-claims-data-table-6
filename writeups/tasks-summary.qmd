@@ -1,6 +1,6 @@
 ---
 title: "Summary of exploratory tasks"
-author: 'Sophie Lian, Sanil Katula'
+author: 'Sophie Lian'
 date: today
 ---
 
@@ -10,18 +10,20 @@ To determine whether header content improves webpage classification, we extended
 
 The results indicate that including header text did not improve predictive accuracy. The LPCR model using only paragraph text achieved an accuracy of 0.547, while the model using both paragraphs and headers decreased slightly to 0.531. This suggests that headers, while potentially informative, were often too inconsistent or sparse across webpages to meaningfully enhance classification. Thus, the additional header text may have introduced noise rather than providing useful signal for the binary prediction task, and therefore we can conclude that including header text did not improve predictive accuracy.
 
+
 ### Bigrams
 
-Do bigrams capture additional information relevant to the classification of interest? Answer the question, **briefly** describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer.
+Yes, bigrams capture additional information relevant to the classification of interest. To evaluate this, we constructed a baseline logistic regression model using PCA-reduced unigram TF-IDF features. This unigram model served as a reference point for assessing whether incorporating word-pair structure would meaningfully improve predictive performance.
 
-### Neural net
+The analysis was then extended by generating bigram features from the training data, filtering them by frequency, and converting them into TF-IDF representations. After applying PCA to reduce dimensionality, the resulting bigram principal components were stacked with the unigram model’s log-odds and used to fit a second logistic regression model. By aligning observation IDs across the unigram and bigram feature sets, both models were evaluated on the same subset of documents. This ensured a fair, one-to-one comparison, so performance differences reflect true model improvements.
 
-Summarize the neural network model you trained by desribing:
+Quantitatively, the stacked bigram model outperformed the unigram model on both key metrics. Test accuracy increased from 0.6171 (unigram) to 0.6472 (stacked model), and AUC improved from 0.6697 to 0.6951. These gains indicate that bigrams capture meaningful context, such as phrase-level patterns or dependencies between adjacent words, that unigrams alone cannot express. The consistent improvement across accuracy and AUC provides clear evidence that incorporating bigram information enhances the model’s ability to distinguish between the two claim classes.
 
--   architecture
 
--   optimization and loss
+### Neural network
 
--   training epochs
+For preliminary task 3, we trained a feed-forward neural network on the TF-IDF feature matrix generated from the claim text. After removing constant predictors, the final input dimension included several thousand sparse features. The model architecture consisted of three fully connected hidden layers with 64, 32, and 16 units, respectively, each using ReLU activation to capture nonlinear structure in the high-dimensional text data. To reduce overfitting, an important challenge with TF-IDF inputs, we incorporated dropout (0.15) after the first two layers, which randomly deactivates a portion of neurons during training to improve generalization. The final output layer used a single sigmoid unit to produce a probability for the binary classification task.
 
--   predictive accuracy
+The network was trained using the Adam optimizer, which adapts learning rates dynamically during training and is well-suited for large, complex deep learning models. We used binary cross-entropy as the loss function, consistent with the binary nature of the prediction target. Training was performed for 25 epochs with a batch size of 32 and included a 20% validation split to monitor performance during training. 
+
+On the test set, the neural network achieved a predictive accuracy of approximately 0.78, which represents a substantial improvement over the baseline logistic principle component regression model from preliminary task 1 that achieved an accuracy of approximately 0.547. This suggests that the neural network was better able to capture the complex, non-linear patterns present in the TF-IDF values of the claims data. Overall, this improvement highlights the value of deeper architectures and regularization when modeling high dimensional text features, leading to stronger predictive performance and more reliable classification claim outcomes. 
