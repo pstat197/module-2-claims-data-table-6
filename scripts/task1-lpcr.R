@@ -87,4 +87,4 @@ print(paste("Accuracy with headers:", accuracy_headers))
 saveRDS(results_headers$model, 
         file = "results/Task1Results/task1-model_headers.rds")
 saveRDS(results_headers$pca,   
-        file = "results/Task1Results/pca_headers.rds")
+        file = "results/Task1Results/pca_headers.rds") 
