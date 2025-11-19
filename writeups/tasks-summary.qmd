@@ -10,6 +10,7 @@ To determine whether header content improves webpage classification, we extended
 
 The results indicate that including header text did not improve predictive accuracy. The LPCR model using only paragraph text achieved an accuracy of 0.547, while the model using both paragraphs and headers decreased slightly to 0.531. This suggests that headers, while potentially informative, were often too inconsistent or sparse across webpages to meaningfully enhance classification. Thus, the additional header text may have introduced noise rather than providing useful signal for the binary prediction task, and therefore we can conclude that including header text did not improve predictive accuracy.
 
+
 ### Bigrams
 
 Yes, bigrams capture additional information relevant to the classification of interest. To evaluate this, we constructed a baseline logistic regression model using PCA-reduced unigram TF-IDF features. This unigram model served as a reference point for assessing whether incorporating word-pair structure would meaningfully improve predictive performance.
