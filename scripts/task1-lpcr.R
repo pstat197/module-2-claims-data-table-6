@@ -6,7 +6,7 @@ library(irlba)
 
 source("scripts/preprocessing.R")
 
-# logistic PCR - return accuracy
+# logistic PCR - return accuracy, pca object, and fitted model
 run_lpcr <- function(clean_data) {
   
   claims_tfidf <- nlp_fn(clean_data)
@@ -24,6 +24,7 @@ run_lpcr <- function(clean_data) {
     select(-.id, -bclass) %>%
     as.matrix()
 
+  # remove zero-variance columns
   non_constant <- apply(X_train, 2, var) != 0
   X_train <- X_train[, non_constant]
   X_test  <- X_test[,  non_constant]
@@ -48,18 +49,42 @@ run_lpcr <- function(clean_data) {
                       levels(y_train)[1]) |>
     factor(levels = levels(y_train))
   
-  mean(test_pred == y_test) 
+  accuracy <- mean(test_pred == y_test) 
+  
+  return(list(
+    accuracy = accuracy,
+    pca = pca,
+    model = logit_fit
+  ))
 }
 
 # 1. Accuracy WITHOUT headers
 load("data/claims-clean-example.RData")      # paragraphs only
-accuracy_no_headers <- run_lpcr(claims_clean)
+results_no_headers <- run_lpcr(claims_clean)
+accuracy_no_headers <- results_no_headers$accuracy
 print(paste("Accuracy without headers:", accuracy_no_headers))
 #output = Accuracy without headers: 0.546835443037975
+
+# create folder
+dir.create("results/Task1Results", showWarnings = FALSE)
+
+# Save PCA + model
+saveRDS(results_no_headers$model, 
+        file = "results/Task1Results/task1-model_no_headers.rds")
+saveRDS(results_no_headers$pca,   
+        file = "results/Task1Results/pca_no_headers.rds")
+
 
 
 # 2. Accuracy WITH headers
 load("data/claims-clean-headers.RData")      # headers + paragraphs
-accuracy_headers <- run_lpcr(claims_clean)
+results_headers <- run_lpcr(claims_clean)
+accuracy_headers <- results_headers$accuracy
 print(paste("Accuracy with headers:", accuracy_headers))
 #output = "Accuracy with headers: 0.530952380952381"
+
+# Save PCA + model
+saveRDS(results_headers$model, 
+        file = "results/Task1Results/task1-model_headers.rds")
+saveRDS(results_headers$pca,   
+        file = "results/Task1Results/pca_headers.rds")
