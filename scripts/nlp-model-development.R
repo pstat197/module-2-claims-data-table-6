@@ -71,7 +71,20 @@ history <- model %>%
       validation_split = 0.3,
       epochs = 5)
 
-## CHECK TEST SET ACCURACY HERE
+
+
+# Test Set Accuracy
+test_text <- testing(partitions) %>%
+  pull(text_clean)
+
+test_labels <- testing(partitions) %>%
+  pull(bclass) %>%
+  as.numeric() - 1   # convert factor → numeric 0/1
+
+metrics <- model %>% evaluate(test_text, test_labels)
+
+cat("Test Accuracy:", metrics["binary_accuracy"], "\n")
+
 
 # save the entire model as a SavedModel
 save_model_tf(model, "results/example-model")
